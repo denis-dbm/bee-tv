@@ -2,6 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import { FakeHttpClient } from '@/test/fakeHttpClient';
 import { DARK, DARK_RESULT, notFound, SEASONS } from '@/test/fixtures';
 import { renderApp } from '@/test/render';
+import { describeBackTarget } from './backTarget';
 
 function detailsHttp() {
   return new FakeHttpClient()
@@ -80,6 +81,72 @@ describe('ShowDetailsPage', () => {
     expect(await screen.findByText('This one flew away')).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'Back to search' }));
     expect(router.state.location.pathname).toBe('/');
+  });
+});
+
+describe('describeBackTarget', () => {
+  const at = (pathname: string, search = '') => ({ pathname, search, hash: '' });
+  it.each([
+    [at('/', '?q=pokemon'), undefined, 'Back to results for “pokemon”'],
+    [at('/', '?q=%20%20'), undefined, 'Back to search'],
+    [at('/'), undefined, 'Back to search'],
+    [at('/shows/590'), 'Dark', 'Back to Dark'],
+    [at('/shows/590'), undefined, 'Back to previous series'],
+    [at('/somewhere'), undefined, 'Back'],
+  ])('%o (title %s) -> %s', (target, title, label) => {
+    expect(describeBackTarget(target, title)).toBe(label);
+  });
+});
+
+describe('ShowDetailsPage back link', () => {
+  const OTHER = { ...DARK, id: '2', title: 'Dark Matter' };
+  function http() {
+    return detailsHttp()
+      .on('GET', '/shows', { items: [DARK_RESULT] })
+      .on('GET', '/shows/2', OTHER)
+      .on('GET', '/shows/2/seasons', { items: [] })
+      .on('GET', '/shows/2/watched-episodes', { items: [] })
+      .on('GET', '/shows/2/comments', { items: [] })
+      .on('GET', '/shows/2/episodes/comment-counts', { items: [] });
+  }
+
+  it('is hidden when the user arrived from outside the app', async () => {
+    await renderApp('/shows/17861', http());
+    await screen.findByRole('heading', { level: 1, name: 'Dark' });
+    expect(screen.queryByRole('link', { name: /^Back to/ })).not.toBeInTheDocument();
+  });
+
+  it('links to the real search the user came from, placed before the page heading', async () => {
+    const { user, router } = await renderApp('/', http());
+    await user.type(screen.getByRole('searchbox'), 'dark');
+    await user.click(await screen.findByRole('link', { name: /Dark 2017/ }));
+
+    const back = await screen.findByRole('link', { name: 'Back to results for “dark”' });
+    expect(back).toHaveAttribute('href', '/?q=dark');
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Dark' });
+    // DOCUMENT_POSITION_FOLLOWING: the heading comes after the link (reading and tab order).
+    expect(back.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    await user.click(back);
+    expect(router.state.location.pathname).toBe('/');
+    expect(router.state.location.search).toBe('?q=dark');
+    expect(await screen.findByText('1 series found for “dark”')).toBeInTheDocument();
+  });
+
+  it('links series to series, named after the cached previous series', async () => {
+    const { router } = await renderApp('/shows/17861', http());
+    await screen.findByRole('heading', { level: 1, name: 'Dark' });
+
+    await act(() => router.navigate('/shows/2'));
+    await screen.findByRole('heading', { level: 1, name: 'Dark Matter' });
+    expect(screen.getByRole('link', { name: 'Back to Dark' })).toHaveAttribute('href', '/shows/17861');
+  });
+
+  it('is hidden when the previous entry is this very page', async () => {
+    const { router } = await renderApp('/shows/17861', http());
+    await screen.findByRole('heading', { level: 1, name: 'Dark' });
+    await act(() => router.navigate('/shows/17861'));
+    expect(screen.queryByRole('link', { name: /^Back to/ })).not.toBeInTheDocument();
   });
 });
 

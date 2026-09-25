@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { useHttpClient } from '@/shared/api';
-import { createShowDetailsApi } from './api';
+import { createShowDetailsApi, type ShowDetails } from './api';
 
 export const showKeys = {
   show: (showId: string) => ['show', showId] as const,
@@ -29,4 +29,10 @@ export function useSeasons(showId: string) {
     queryFn: ({ signal }) => api.getSeasons(showId, signal),
     staleTime: 5 * 60_000,
   });
+}
+
+/** Title of a series only if it is already cached: never triggers a request. */
+export function useCachedShowTitle(showId: string | undefined): string | undefined {
+  const queryClient = useQueryClient();
+  return showId ? queryClient.getQueryData<ShowDetails>(showKeys.show(showId))?.title : undefined;
 }

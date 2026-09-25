@@ -8,6 +8,7 @@ import { type Episode, SeasonsSection, ShowHeader, ShowHeaderSkeleton, useSeason
 import { EpisodeWatchToggle, WatchProgress } from '@/features/watch-tracking';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { ErrorState } from '@/shared/ui';
+import { BackLink } from './BackLink';
 
 /** Composition root of the details experience: wires independent features through slots. */
 export function ShowDetailsPage() {
@@ -49,19 +50,23 @@ export function ShowDetailsPage() {
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
       <Stack spacing={5}>
-        {show.isPending ? (
-          <ShowHeaderSkeleton />
-        ) : (
-          <ShowHeader
-            show={show.data}
-            posterActions={
-              <Stack spacing={2}>
-                <BeeReviewButton target={{ showId }} subjectTitle={show.data.title} />
-                <WatchProgress showId={showId} episodeIds={episodeIds} />
-              </Stack>
-            }
-          />
-        )}
+        {/* Back link sits above the page heading (top-left): first in reading and tab order. */}
+        <Stack spacing={1.5}>
+          <BackLink />
+          {show.isPending ? (
+            <ShowHeaderSkeleton />
+          ) : (
+            <ShowHeader
+              show={show.data}
+              posterActions={
+                <Stack spacing={2}>
+                  <BeeReviewButton target={{ showId }} subjectTitle={show.data.title} />
+                  <WatchProgress showId={showId} episodeIds={episodeIds} />
+                </Stack>
+              }
+            />
+          )}
+        </Stack>
         <SeasonsSection showId={showId} renderTitleAdornment={renderTitleAdornment} renderActions={renderActions} />
         <Divider />
         <CommentsSection target={{ showId }} heading="Comments" />

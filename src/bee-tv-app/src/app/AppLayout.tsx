@@ -2,6 +2,7 @@ import { AppBar, Box, Container, Link, Stack, Toolbar, Typography } from '@mui/m
 import { useState } from 'react';
 import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { SearchBar } from '@/features/search';
+import { NavigationHistoryProvider } from '@/shared/navigation';
 import { BeeMascot } from '@/shared/ui';
 
 function HeaderSearch() {
@@ -61,7 +62,9 @@ export function AppLayout() {
         </Toolbar>
       </AppBar>
       <Box component="main" id="main-content" tabIndex={-1} sx={{ flexGrow: 1, outline: 'none' }}>
-        <Outlet />
+        <NavigationHistoryProvider>
+          <Outlet />
+        </NavigationHistoryProvider>
       </Box>
       <Box component="footer" sx={{ py: 3, borderTop: 1, borderColor: 'divider' }}>
         <Container maxWidth="xl">

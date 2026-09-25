@@ -5,4 +5,4 @@ export type { EpisodeSlots } from './components/EpisodeTile';
 export { SeasonsSection } from './components/SeasonsSection';
 export { ShowHeader, ShowHeaderSkeleton } from './components/ShowHeader';
 export { episodeCode, seasonLabel } from './format';
-export { useSeasons, useShow } from './hooks';
+export { useCachedShowTitle, useSeasons, useShow } from './hooks';
