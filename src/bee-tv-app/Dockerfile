@@ -29,8 +29,9 @@ LABEL org.opencontainers.image.title="bee-tv-app" \
       org.opencontainers.image.description="Bee TV single-page application" \
       org.opencontainers.image.source="https://github.com/denis-dbm/bee-tv"
 
-# Default upstream; Compose derives it from BEE_API_PORT.
-ENV BEE_API_UPSTREAM=http://api:8000
+# Default upstream (Compose derives it from BEE_API_PORT); expose the runtime DNS resolver to nginx.
+ENV BEE_API_UPSTREAM=http://api:8000 \
+    NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 
 # The official image renders /etc/nginx/templates/*.template with envsubst at start-up.
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template

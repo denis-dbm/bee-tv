@@ -5,21 +5,25 @@ track watched episodes, discuss them, and get an AI-powered **Bee Review**.
 
 ## Quick start
 
-Requirements: **Docker** with the Compose plugin (Docker Desktop, or Docker Engine 24+ and Compose v2).
+Requirements: **Docker** and Docker Compose. `docker-compose.yml` uses **Compose file format 3.3**:
+it runs on Docker Compose v2 (`docker compose`) and on legacy `docker-compose` v1 (1.17+).
 
 ```bash
 docker compose up --build
 ```
 
 Open **http://localhost:7777**. That's it: the database, schema migrations, API and web app
-start in the right order, gated by health checks. First build takes about a minute.
+start in order, and each service handles its own readiness (see [Startup and readiness](#startup-and-readiness)).
+The first build takes about a minute.
 
 | Command | Purpose |
 | --- | --- |
-| `docker compose up --build -d --wait` | Start detached and return once every service is healthy |
+| `docker compose up --build -d --wait` | Start detached and return once every service is healthy (`--wait` is Compose v2 only) |
 | `docker compose logs -f api` | Follow API logs |
 | `docker compose down` | Stop (data is kept in the `db-data` volume) |
 | `docker compose down -v` | Stop **and delete all data** |
+
+With legacy Compose v1, use `docker-compose` in place of `docker compose`.
 
 ### Optional configuration
 
@@ -58,7 +62,19 @@ flowchart LR
 | `api` | `src/bee-tv-api/Dockerfile` (uv build, then slim Python 3.13, non-root) | Runs migrations, then uvicorn on `BEE_API_PORT` (default 8000, internal only) |
 | `db` | `mysql:8.4` (LTS) | Persistent named volume `db-data`; not published to the host |
 
-Startup order: `db` healthy, then `api` (migrations applied, `/api/health` green), then `web` healthy.
+### Startup and readiness
+
+File format 3.3 has no `depends_on` health conditions, so `depends_on` only orders start-up
+(`db`, then `api`, then `web`). Each service tolerates a dependency that isn't ready yet:
+
+- **`api` waits for MySQL:** `python -m app.migrate` retries the connection (up to 30 attempts,
+  2 s apart) before applying migrations and starting the server.
+- **`web` resolves the API lazily:** nginx resolves the `api` hostname per request, not once at
+  start-up. It starts even if the API isn't up yet (requests get a 502 for those few seconds,
+  shown as the app's friendly "try again" state). It also follows the API container when it is
+  recreated with a new IP.
+- **Health checks** are still defined for every service, so `docker compose ps`, `--wait` and
+  orchestrators report real health.
 
 ### Backend (`src/bee-tv-api`)
 

@@ -63,7 +63,9 @@ COPY --from=test /quality-gate.txt ./quality-gate.txt
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY app ./app
-COPY --chmod=0755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+# Plain COPY + chmod (no `COPY --chmod`): also builds with the legacy, non-BuildKit builder.
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod 0755 /usr/local/bin/docker-entrypoint.sh
 
 USER app
 # Default port; override at runtime with BEE_API_PORT (server and healthcheck both follow it).
