@@ -1,4 +1,8 @@
-"""Alembic environment (async engine, URL from application settings)."""
+"""Alembic environment (async engine).
+
+The URL comes from `sqlalchemy.url` when set programmatically (see `app.migrate`),
+otherwise from the application settings, so `alembic upgrade head` also works by hand.
+"""
 
 import asyncio
 from logging.config import fileConfig
@@ -12,13 +16,17 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 
 
+def database_url() -> str:
+    return config.get_main_option("sqlalchemy.url") or get_settings().database_url
+
+
 def run_migrations_offline() -> None:
-    context.configure(url=get_settings().database_url, target_metadata=target_metadata)
+    context.configure(url=database_url(), target_metadata=target_metadata)
     with context.begin_transaction():
         context.run_migrations()
 
@@ -30,7 +38,7 @@ def _run(connection: Connection) -> None:
 
 
 async def run_migrations_online() -> None:
-    engine = create_async_engine(get_settings().database_url)
+    engine = create_async_engine(database_url())
     async with engine.connect() as connection:
         await connection.run_sync(_run)
     await engine.dispose()

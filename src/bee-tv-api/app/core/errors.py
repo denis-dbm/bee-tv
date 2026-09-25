@@ -12,6 +12,7 @@ from typing import Any, ClassVar
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import InterfaceError, OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,11 @@ class ServiceUnavailableError(ApplicationError):
     status_code = HTTPStatus.SERVICE_UNAVAILABLE
     code = "service_unavailable"
     title = "A partner service is temporarily unavailable"
+
+
+class DatabaseUnavailableError(ServiceUnavailableError):
+    code = "database_unavailable"
+    title = "Our storage is temporarily unavailable"
 
 
 def problem(
@@ -91,6 +97,13 @@ async def handle_http_exception(request: Request, exc: Exception) -> JSONRespons
     )
 
 
+async def handle_database_connection_error(request: Request, exc: Exception) -> JSONResponse:
+    """Connection-level driver failures are an outage of a dependency (503), not a bug (500)."""
+    logger.error("Database unavailable on %s %s: %s", request.method, request.url.path, exc)
+    error = DatabaseUnavailableError()
+    return problem(error.status_code, error.title, error.detail, error.code, request.url.path)
+
+
 async def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
     logger.error("Unhandled error on %s %s", request.method, request.url.path, exc_info=exc)
     return problem(
@@ -106,4 +119,6 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(ApplicationError, handle_application_error)
     app.add_exception_handler(RequestValidationError, handle_validation_error)
     app.add_exception_handler(StarletteHTTPException, handle_http_exception)
+    app.add_exception_handler(OperationalError, handle_database_connection_error)
+    app.add_exception_handler(InterfaceError, handle_database_connection_error)
     app.add_exception_handler(Exception, handle_unexpected_error)

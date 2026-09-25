@@ -1,0 +1,65 @@
+# Bee TV: one command runs the whole solution.
+#   docker compose up --build
+# Then open http://localhost:7777
+#
+# Configuration comes from `.env` (optional; see `.env.example`). Every variable has a
+# safe default, so the stack also starts without any `.env` file.
+#
+# Compose Specification format (successor of the v3.x file formats; no `version` key needed).
+
+name: bee-tv
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-beetv}
+      MYSQL_USER: ${MYSQL_USER:-beetv}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-beetv}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-beetv-root}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      # TCP ping only succeeds once the real server is up (the init server has networking off).
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  api:
+    build:
+      context: ./src/bee-tv-api
+    image: bee-tv-api:local
+    restart: unless-stopped
+    environment:
+      BEE_DATABASE_URL: mysql+asyncmy://${MYSQL_USER:-beetv}:${MYSQL_PASSWORD:-beetv}@db:3306/${MYSQL_DATABASE:-beetv}
+      BEE_LOG_LEVEL: ${BEE_LOG_LEVEL:-INFO}
+      HF_TOKEN: ${HF_TOKEN:-}
+      BEE_INSIGHT_MODEL: ${BEE_INSIGHT_MODEL:-meta-llama/Llama-3.1-8B-Instruct}
+      BEE_INSIGHT_API_BASE_URL: ${BEE_INSIGHT_API_BASE_URL:-https://router.huggingface.co/v1}
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  web:
+    build:
+      context: ./src/bee-tv-app
+    image: bee-tv-app:local
+    restart: unless-stopped
+    environment:
+      BEE_API_UPSTREAM: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${BEE_PORT:-7777}:7777"
+
+volumes:
+  db-data:

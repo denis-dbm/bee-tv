@@ -12,6 +12,7 @@ from app.core.errors import (
 from app.core.identity import GUEST_USER, get_current_user
 from app.core.logging import REQUEST_ID_HEADER, access_log_middleware
 from fastapi import FastAPI, Query
+from sqlalchemy.exc import OperationalError
 
 
 class WidgetMissingError(NotFoundError):
@@ -36,6 +37,10 @@ def error_app() -> FastAPI:
     @app.get("/bug")
     async def bug() -> None:
         raise ZeroDivisionError
+
+    @app.get("/db-down")
+    async def db_down() -> None:
+        raise OperationalError("SELECT 1", {}, ConnectionRefusedError("Can't connect"))
 
     @app.get("/typed")
     async def typed(n: int = Query()) -> int:
@@ -74,6 +79,12 @@ class TestGlobalExceptionHandlers:
         assert response.status_code == 500
         assert "ZeroDivision" not in response.text
         assert response.json()["code"] == "internal_error"
+
+    async def test_database_outage_is_503(self, http: httpx.AsyncClient) -> None:
+        response = await http.get("/db-down")
+        assert response.status_code == 503
+        assert response.json()["code"] == "database_unavailable"
+        assert "Can't connect" not in response.text
 
     async def test_validation_error(self, http: httpx.AsyncClient) -> None:
         response = await http.get("/typed", params={"n": "abc"})

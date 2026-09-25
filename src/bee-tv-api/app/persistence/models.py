@@ -7,10 +7,14 @@ each slice owns its own queries/repositories over these tables.
 from datetime import datetime
 
 from sqlalchemy import DateTime, Index, Integer, String, Text
+from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, utc_now
 from app.core.params import ID_LENGTH
+
+# Microsecond precision on MySQL (DATETIME defaults to whole seconds); timestamps are UTC.
+Timestamp = DateTime().with_variant(mysql.DATETIME(fsp=6), "mysql")
 
 
 class CommentRecord(Base):
@@ -25,7 +29,7 @@ class CommentRecord(Base):
     show_id: Mapped[str] = mapped_column(String(ID_LENGTH), nullable=False)
     episode_id: Mapped[str | None] = mapped_column(String(ID_LENGTH), nullable=True)
     body: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(), nullable=False, default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(Timestamp, nullable=False, default=utc_now)
 
 
 class WatchedEpisodeRecord(Base):
@@ -35,4 +39,4 @@ class WatchedEpisodeRecord(Base):
     user_id: Mapped[str] = mapped_column(String(ID_LENGTH), primary_key=True)
     episode_id: Mapped[str] = mapped_column(String(ID_LENGTH), primary_key=True)
     show_id: Mapped[str] = mapped_column(String(ID_LENGTH), nullable=False)
-    watched_at: Mapped[datetime] = mapped_column(DateTime(), nullable=False, default=utc_now)
+    watched_at: Mapped[datetime] = mapped_column(Timestamp, nullable=False, default=utc_now)

@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import AliasChoices, Field, SecretStr
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +33,17 @@ class Settings(BaseSettings):
 
     circuit_breaker_failure_threshold: int = 3
     circuit_breaker_reset_seconds: float = 30.0
+
+    migrate_max_attempts: int = 30
+    migrate_retry_seconds: float = 2.0
+
+    @field_validator("insight_api_token", mode="before")
+    @classmethod
+    def _blank_token_is_none(cls, value: object) -> object:
+        """Compose passes unset variables as empty strings: treat them as "no token"."""
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
 
 @lru_cache

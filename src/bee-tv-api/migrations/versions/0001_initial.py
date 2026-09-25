@@ -9,11 +9,14 @@ from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import mysql
 
 revision: str = "0001_initial"
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
+
+TIMESTAMP = sa.DateTime().with_variant(mysql.DATETIME(fsp=6), "mysql")
 
 
 def upgrade() -> None:
@@ -25,7 +28,7 @@ def upgrade() -> None:
         sa.Column("show_id", sa.String(64), nullable=False),
         sa.Column("episode_id", sa.String(64), nullable=True),
         sa.Column("body", sa.Text(), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("created_at", TIMESTAMP, nullable=False),
     )
     op.create_index(
         "ix_comments_show_episode_created", "comments", ["show_id", "episode_id", "created_at"]
@@ -35,7 +38,7 @@ def upgrade() -> None:
         sa.Column("user_id", sa.String(64), primary_key=True),
         sa.Column("episode_id", sa.String(64), primary_key=True),
         sa.Column("show_id", sa.String(64), nullable=False),
-        sa.Column("watched_at", sa.DateTime(), nullable=False),
+        sa.Column("watched_at", TIMESTAMP, nullable=False),
     )
     op.create_index("ix_watched_episodes_user_show", "watched_episodes", ["user_id", "show_id"])
 
