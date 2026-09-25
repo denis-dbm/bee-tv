@@ -38,6 +38,7 @@ services:
     restart: unless-stopped
     environment:
       BEE_DATABASE_URL: mysql+asyncmy://${MYSQL_USER:-beetv}:${MYSQL_PASSWORD:-beetv}@db:3306/${MYSQL_DATABASE:-beetv}
+      BEE_API_PORT: ${BEE_API_PORT:-8000}
       BEE_LOG_LEVEL: ${BEE_LOG_LEVEL:-INFO}
       HF_TOKEN: ${HF_TOKEN:-}
       BEE_INSIGHT_MODEL: ${BEE_INSIGHT_MODEL:-meta-llama/Llama-3.1-8B-Instruct}
@@ -46,7 +47,7 @@ services:
       db:
         condition: service_healthy
     expose:
-      - "8000"
+      - "${BEE_API_PORT:-8000}"
 
   web:
     build:
@@ -54,12 +55,12 @@ services:
     image: bee-tv-app:local
     restart: unless-stopped
     environment:
-      BEE_API_UPSTREAM: http://api:8000
+      BEE_API_UPSTREAM: http://api:${BEE_API_PORT:-8000}
     depends_on:
       api:
         condition: service_healthy
     ports:
-      - "${BEE_PORT:-7777}:7777"
+      - "${BEE_WEB_PORT:-7777}:7777"
 
 volumes:
   db-data:

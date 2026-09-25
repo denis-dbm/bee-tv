@@ -1,12 +1,13 @@
 import httpx
 import pytest
+from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import create_async_engine
+
 from app.core.config import Settings
 from app.core.db import Database
 from app.features.bee_review.insights import InsightGenerator
 from app.integrations.catalog.provider import CatalogProvider
 from app.main import create_app
-from fastapi import FastAPI
-from sqlalchemy.ext.asyncio import create_async_engine
 
 
 class TestHealth:

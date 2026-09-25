@@ -27,7 +27,8 @@ Every setting has a working default. To customize, copy `.env.example` to `.env`
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `BEE_PORT` | `7777` | Host port of the web application |
+| `BEE_WEB_PORT` | `7777` | Host port of the web application |
+| `BEE_API_PORT` | `8000` | Port the backend API listens on (nginx upstream and healthcheck follow it) |
 | `MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD` | `beetv` | Application database and credentials (URL-safe characters) |
 | `MYSQL_ROOT_PASSWORD` | `beetv-root` | MySQL root password |
 | `HF_TOKEN` | *(empty)* | HuggingFace token enabling AI Bee Reviews ([create one](https://huggingface.co/settings/tokens) with *Make calls to Inference Providers*) |
@@ -54,7 +55,7 @@ flowchart LR
 | Service | Image | Notes |
 | --- | --- | --- |
 | `web` | `src/bee-tv-app/Dockerfile` (Bun + Vite build, then unprivileged nginx) | Serves the SPA on **:7777**, proxies `/api` to `api` (same origin: no CORS), strict security headers |
-| `api` | `src/bee-tv-api/Dockerfile` (uv build, then slim Python 3.13, non-root) | Runs migrations, then uvicorn on :8000 (internal only) |
+| `api` | `src/bee-tv-api/Dockerfile` (uv build, then slim Python 3.13, non-root) | Runs migrations, then uvicorn on `BEE_API_PORT` (default 8000, internal only) |
 | `db` | `mysql:8.4` (LTS) | Persistent named volume `db-data`; not published to the host |
 
 Startup order: `db` healthy, then `api` (migrations applied, `/api/health` green), then `web` healthy.
@@ -131,7 +132,7 @@ uv run alembic revision --autogenerate -m "describe the change"   # review the g
 
 - Logs go to stdout (12-factor). Every API request is logged with method, path, status,
   latency and an `X-Request-ID`. nginx generates that ID and returns it to clients.
-- Containers run as non-root users, and only port 7777 is exposed on the host.
+- Containers run as non-root users, and only the web port (`BEE_WEB_PORT`, default 7777) is exposed on the host.
 - The services recover by themselves: after a database restart the API reconnects
   (pool pre-ping). After a partner outage, the circuit breakers close again automatically.
 
@@ -139,7 +140,7 @@ uv run alembic revision --autogenerate -m "describe the change"   # review the g
 
 | Symptom | Fix |
 | --- | --- |
-| `port is already allocated` | Set `BEE_PORT` in `.env` to a free port |
+| `port is already allocated` | Set `BEE_WEB_PORT` in `.env` to a free port |
 | Bee Review always shows *Bee's instinct* | `HF_TOKEN` is missing or invalid, or the model is unavailable. Check `docker compose logs api` |
 | Changed MySQL credentials don't apply | MySQL only reads them on first init. Run `docker compose down -v` (**deletes data**) |
 
@@ -153,7 +154,7 @@ uv sync
 uv run ruff check . && uv run ruff format --check . && uv run mypy   # lint, format, types (strict)
 uv run pytest --cov                                                  # unit tests
 BEE_DATABASE_URL="sqlite+aiosqlite:///./dev.db" uv run python -m app.migrate
-BEE_DATABASE_URL="sqlite+aiosqlite:///./dev.db" uv run uvicorn app.main:create_app --factory --reload
+BEE_DATABASE_URL="sqlite+aiosqlite:///./dev.db" uv run python -m app   # listens on BEE_API_PORT (default 8000)
 ```
 
 Frontend (requires [Bun](https://bun.sh)):
@@ -163,7 +164,7 @@ cd src/bee-tv-app
 bun install
 bun run lint && bun run typecheck   # ESLint (boundaries + a11y) and TypeScript
 bun run test:coverage               # Vitest + Testing Library
-bun run dev                         # http://localhost:7777, proxies /api to localhost:8000
+bun run dev                         # http://localhost:7777, proxies /api to localhost:$BEE_API_PORT (default 8000)
 ```
 
 ## Repository layout

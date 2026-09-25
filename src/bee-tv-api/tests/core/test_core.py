@@ -2,6 +2,9 @@ from datetime import UTC, datetime
 
 import httpx
 import pytest
+from fastapi import FastAPI, Query
+from sqlalchemy.exc import OperationalError
+
 from app.core.db import as_utc, utc_now
 from app.core.errors import (
     PROBLEM_JSON,
@@ -11,8 +14,6 @@ from app.core.errors import (
 )
 from app.core.identity import GUEST_USER, get_current_user
 from app.core.logging import REQUEST_ID_HEADER, access_log_middleware
-from fastapi import FastAPI, Query
-from sqlalchemy.exc import OperationalError
 
 
 class WidgetMissingError(NotFoundError):

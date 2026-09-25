@@ -2,14 +2,14 @@ from collections.abc import AsyncIterator
 
 import httpx
 import pytest
-from app.core.config import Settings
-from app.core.db import Base, Database
-from app.main import create_app
-from app.persistence import models  # noqa: F401 - registers tables
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import Settings
+from app.core.db import Base, Database
+from app.main import create_app
+from app.persistence import models  # noqa: F401 - registers tables
 from tests.fakes import FakeCatalogProvider, FakeInsightGenerator
 
 SQLITE_URL = "sqlite+aiosqlite:///:memory:"

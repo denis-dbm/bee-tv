@@ -1,8 +1,8 @@
 import httpx
 import pytest
+
 from app.core.db import Database
 from app.features.watch_tracking.repository import SqlWatchedEpisodeRepository
-
 from tests.fakes import FakeCatalogProvider
 
 BASE = "/api/v1/shows/17861/watched-episodes"

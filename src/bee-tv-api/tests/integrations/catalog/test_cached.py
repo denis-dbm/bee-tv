@@ -1,10 +1,10 @@
 import httpx
 import pytest
+
 from app.core.config import Settings
 from app.integrations.catalog.cached import CachedCatalogProvider
 from app.integrations.catalog.dependencies import build_catalog_http_client, build_catalog_provider
 from app.integrations.catalog.provider import CatalogUnavailableError, ShowNotFoundError
-
 from tests.fakes import FakeCatalogProvider
 
 

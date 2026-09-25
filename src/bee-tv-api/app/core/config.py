@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Bee TV API"
+    api_host: str = "0.0.0.0"  # noqa: S104 - containerized: listen on all interfaces
+    api_port: int = Field(default=8000, ge=1, le=65535)
     log_level: str = "INFO"
     database_url: str = "mysql+asyncmy://beetv:beetv@localhost:3306/beetv"
 

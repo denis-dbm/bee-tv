@@ -10,7 +10,7 @@ export default defineConfig({
   },
   server: {
     port: 7777,
-    proxy: { '/api': process.env.BEE_API_URL ?? 'http://localhost:8000' },
+    proxy: { '/api': process.env.BEE_API_URL ?? `http://localhost:${process.env.BEE_API_PORT ?? '8000'}` },
   },
   preview: { port: 7777 },
   build: {

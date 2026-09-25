@@ -1,4 +1,5 @@
 import httpx
+
 from app.features.show_details.endpoints import group_by_season
 from app.integrations.catalog.models import Episode
 

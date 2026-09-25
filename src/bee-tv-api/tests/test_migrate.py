@@ -1,10 +1,11 @@
 from pathlib import Path
 
 import pytest
-from app.core.config import Settings
-from app.migrate import DatabaseUnavailableError, main, upgrade_schema, wait_for_database
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import OperationalError
+
+from app.core.config import Settings
+from app.migrate import DatabaseUnavailableError, main, upgrade_schema, wait_for_database
 
 
 class FlakyDatabase:

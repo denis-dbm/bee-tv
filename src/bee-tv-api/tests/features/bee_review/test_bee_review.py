@@ -4,6 +4,7 @@ from collections.abc import Iterator
 import httpx
 import pytest
 import respx
+
 from app.core.config import Settings
 from app.core.db import Database
 from app.core.resilience import CircuitBreaker
@@ -29,7 +30,6 @@ from app.features.bee_review.rule_based import (
     Sentiment,
 )
 from app.persistence.models import CommentRecord
-
 from tests.fakes import FakeInsightGenerator
 
 LLM_BASE = "https://llm.test/v1"

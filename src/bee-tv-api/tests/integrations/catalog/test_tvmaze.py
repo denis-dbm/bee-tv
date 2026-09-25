@@ -3,6 +3,7 @@ from collections.abc import Iterator
 import httpx
 import pytest
 import respx
+
 from app.core.resilience import CircuitBreaker, RetryPolicy
 from app.integrations.catalog.provider import (
     CatalogUnavailableError,
