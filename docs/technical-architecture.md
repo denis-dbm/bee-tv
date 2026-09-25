@@ -61,3 +61,4 @@ The following DevOps practices should be observed and respected to hand-off the 
 * One container per deployable. For database, persistent storage is allowed
 * Application (frontend) runs on port 7777
 * Automation: Everything must run with a single command
+* Tests (unit and integration) are mandatory gate for every build-deployment action
