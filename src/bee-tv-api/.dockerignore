@@ -7,7 +7,6 @@
 .pytest_cache
 .coverage
 htmlcov
-tests
 .env
 *.db
 Dockerfile

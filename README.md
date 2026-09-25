@@ -144,6 +144,35 @@ uv run alembic revision --autogenerate -m "describe the change"   # review the g
 | Bee Review always shows *Bee's instinct* | `HF_TOKEN` is missing or invalid, or the model is unavailable. Check `docker compose logs api` |
 | Changed MySQL credentials don't apply | MySQL only reads them on first init. Run `docker compose down -v` (**deletes data**) |
 
+## Quality gate
+
+Tests are a **mandatory gate for every build**. Each Dockerfile has a `test` stage, and an image
+can only be produced after it passes. There is no bypass switch, so any failure aborts
+`docker compose up --build`.
+
+| Image | Gate (in order) |
+| --- | --- |
+| `api` | `ruff check`, `ruff format --check`, `mypy` (strict), `pytest` with coverage ≥ 95% |
+| `web` | ESLint (feature boundaries + a11y), `tsc`, Vitest with coverage thresholds (95% lines/statements/functions, 90% branches) |
+
+The suites include unit tests and integration tests. Backend integration tests exercise the HTTP
+API end to end through the ASGI app, run repositories against a real SQL engine, and run the
+Alembic migrations. Frontend integration tests render whole pages with routing and providers.
+External partners (TVMaze, LLM) are faked, so the gate is deterministic and needs no credentials.
+
+How it's wired:
+- **SPA:** the bundle is built `FROM test`, so it cannot exist without a passing gate.
+- **API:** the runtime image copies the gate's report (`/app/quality-gate.txt`), which forces
+  BuildKit to run the stage. Dev tooling never reaches the runtime image.
+
+BuildKit caches the gate layer only while its inputs are byte-identical. Any source or test
+change re-runs it. To run the gate alone (e.g. in CI):
+
+```bash
+docker build --target test src/bee-tv-api
+docker build --target test src/bee-tv-app
+```
+
 ## Local development
 
 Backend (requires [uv](https://docs.astral.sh/uv/)):

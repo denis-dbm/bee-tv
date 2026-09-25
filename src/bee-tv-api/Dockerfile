@@ -16,6 +16,31 @@ WORKDIR /build
 COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --frozen --no-dev --no-install-project
 
+# ---- Quality gate: mandatory for every build. Any failure aborts the image build ----
+# Branches off the builder so dev tooling never reaches the runtime image.
+FROM builder AS test
+
+ENV PATH="/opt/venv/bin:${PATH}"
+RUN uv sync --frozen --no-install-project
+
+COPY alembic.ini ./
+COPY migrations ./migrations
+COPY app ./app
+COPY tests ./tests
+
+# pytest output is not piped into tee: /bin/sh has no pipefail, so a pipe would hide failures.
+RUN set -e; \
+    ruff check .; \
+    ruff format --check .; \
+    mypy; \
+    if ! pytest --cov --cov-report=term -p no:cacheprovider > /tmp/pytest.log 2>&1; then \
+        cat /tmp/pytest.log; exit 1; \
+    fi; \
+    cat /tmp/pytest.log; \
+    { echo "bee-tv-api quality gate: PASSED"; \
+      echo "checks: ruff check, ruff format --check, mypy --strict, pytest (coverage >= 95%)"; \
+      tail -n 1 /tmp/pytest.log; } > /quality-gate.txt
+
 # ---- Runtime stage: slim image, no build tooling, non-root ----
 FROM python:${PYTHON_VERSION}-slim AS runtime
 
@@ -33,6 +58,8 @@ RUN groupadd --system --gid 10001 app \
 
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
+# Depending on the gate's report is what forces BuildKit to run the test stage.
+COPY --from=test /quality-gate.txt ./quality-gate.txt
 COPY alembic.ini ./
 COPY migrations ./migrations
 COPY app ./app

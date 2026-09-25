@@ -35,6 +35,8 @@ export default defineConfig({
       provider: 'istanbul',
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/main.tsx', 'src/test/**', 'src/**/*.test.{ts,tsx}', 'src/**/index.ts'],
+      // Enforced by `bun run test:coverage`, locally and in the Docker build gate.
+      thresholds: { statements: 95, lines: 95, functions: 95, branches: 90 },
     },
   },
 });

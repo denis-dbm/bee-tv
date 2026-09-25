@@ -1,14 +1,26 @@
 # syntax=docker/dockerfile:1
 
-# ---- Build stage: Bun installs the locked dependencies, Vite builds the static bundle ----
-FROM oven/bun:1.3 AS build
+# ---- Dependencies: locked install (dev dependencies included: needed by the gate and the build) ----
+FROM oven/bun:1.3 AS deps
 WORKDIR /app
 
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
+# ---- Quality gate: mandatory for every build. Any failure aborts the image build ----
+FROM deps AS test
+
 COPY . .
-RUN bun run build
+RUN set -e; \
+    bun run lint; \
+    bun run typecheck; \
+    bun run test:coverage; \
+    { echo "bee-tv-app quality gate: PASSED"; \
+      echo "checks: eslint (feature boundaries + a11y), tsc, vitest (coverage thresholds)"; } > /quality-gate.txt
+
+# ---- Build: only reachable through the gate (FROM test) ----
+FROM test AS build
+RUN bunx vite build
 
 # ---- Runtime stage: unprivileged nginx serving the SPA and proxying /api to the backend ----
 FROM nginxinc/nginx-unprivileged:1.29-alpine AS runtime
@@ -23,6 +35,7 @@ ENV BEE_API_UPSTREAM=http://api:8000
 # The official image renders /etc/nginx/templates/*.template with envsubst at start-up.
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /quality-gate.txt /usr/share/nginx/quality-gate.txt
 
 EXPOSE 7777
 
