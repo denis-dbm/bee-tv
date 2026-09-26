@@ -1,0 +1,20 @@
+flowchart LR
+  user(["Viewer<br/>browser"])
+  subgraph compose["Docker Compose · one container per deployable"]
+    direction LR
+    web["<b>web</b><br/>nginx + React SPA<br/><i>static files · /api proxy</i>"]
+    api["<b>api</b><br/>FastAPI · Python 3.13<br/><i>vertical slices</i>"]
+    db[("<b>db</b><br/>MySQL 8.4<br/><i>volume db-data</i>")]
+    web -->|"/api/* · same origin"| api
+    api -->|"async SQLAlchemy"| db
+  end
+  subgraph partners["External partners · behind ports"]
+    direction TB
+    tvmaze["<b>TVMaze API</b><br/><i>catalog</i>"]
+    llm["<b>HuggingFace router</b><br/><i>LLM · OpenAI-compatible</i>"]
+    cdn["static.tvmaze.com<br/><i>poster images</i>"]
+  end
+  user -->|"HTTP :7777"| web
+  api -->|"CatalogProvider"| tvmaze
+  api -->|"InsightGenerator"| llm
+  user -.->|"img"| cdn

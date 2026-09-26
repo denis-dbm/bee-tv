@@ -1,0 +1,36 @@
+classDiagram
+  direction LR
+  class InsightGenerator {
+    <<interface>>
+    +generate(subject) Insight
+  }
+  class FallbackInsightGenerator {
+    <<chain of responsibility>>
+    -primary InsightGenerator
+    -fallback InsightGenerator
+  }
+  class CachedInsightGenerator {
+    <<decorator>>
+    -ttl 1 h · source=ai only
+  }
+  class ChatCompletionInsightGenerator {
+    <<adapter · OpenAI-compatible>>
+    -timeout 20 s
+    -breaker CircuitBreaker
+  }
+  class RuleBasedInsightGenerator {
+    <<strategy · offline>>
+    -genre lexicon
+    -sentiment analyzer
+  }
+  class PromptBuilder {
+    +build(subject) ChatMessage[]
+  }
+  InsightGenerator <|.. FallbackInsightGenerator
+  InsightGenerator <|.. CachedInsightGenerator
+  InsightGenerator <|.. ChatCompletionInsightGenerator
+  InsightGenerator <|.. RuleBasedInsightGenerator
+  FallbackInsightGenerator --> CachedInsightGenerator : primary
+  FallbackInsightGenerator --> RuleBasedInsightGenerator : fallback
+  CachedInsightGenerator --> ChatCompletionInsightGenerator : wraps
+  ChatCompletionInsightGenerator ..> PromptBuilder

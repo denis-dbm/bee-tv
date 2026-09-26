@@ -1,0 +1,12 @@
+flowchart TB
+  main["<b>app/main.py</b><br/>composition root · lifespan · wiring"]
+  subgraph features["app/features · vertical slices (no cross imports)"]
+    direction LR
+    search["search"] ~~~ details["show_details"] ~~~ watch["watch_tracking"] ~~~ comments["comments"] ~~~ review["bee_review"] ~~~ health["health"]
+  end
+  subgraph kernel["shared kernel · infrastructure, not features"]
+    direction LR
+    catalog["<b>integrations/catalog</b><br/>CatalogProvider port"] ~~~ models["<b>persistence</b><br/>shared data model"] ~~~ core["<b>core</b><br/>config · errors · logging<br/>db · identity · resilience"]
+  end
+  main --> features
+  features --> kernel

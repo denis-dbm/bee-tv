@@ -1,0 +1,36 @@
+sequenceDiagram
+  autonumber
+  actor U as Viewer
+  participant P as ShowDetailsPage
+  participant API as API · slices
+  participant CAT as Catalog · cache → TVMaze
+  participant DB as MySQL
+  U->>P: opens /shows/17861 (tile or deep link)
+  par series header · show_details
+    P->>API: GET /shows/17861
+    API->>CAT: get_show
+    CAT-->>API: Show · summary HTML → plain text
+    API-->>P: poster · summary · genres
+  and episodes · show_details
+    P->>API: GET /shows/17861/seasons
+    API->>CAT: list_episodes (with specials)
+    CAT-->>API: Episode[]
+    API->>API: group_by_season
+    API-->>P: [{number, episodes[]}]
+  and watched state · watch_tracking
+    P->>API: GET /shows/17861/watched-episodes
+    API->>DB: SELECT by user_id + show_id
+    API-->>P: [{episodeId, watchedAt}]
+  and comments · comments
+    P->>API: GET …/comments · …/episodes/comment-counts
+    API->>DB: SELECT (index show_id, episode_id, created_at)
+    API-->>P: comments · count per episode
+  end
+  P-->>U: poster │ summary + genres · season tabs · episode tiles
+  Note over P: each section loads and fails independently
+  U->>P: marks an episode as watched
+  P-->>U: ✓ instantly (optimistic update)
+  P->>API: PUT /shows/17861/watched-episodes/1324842
+  API->>CAT: get_episode · exists and belongs to show
+  API->>DB: INSERT · PK (user_id, episode_id) → idempotent
+  API-->>P: 200 · on failure: rollback + friendly toast

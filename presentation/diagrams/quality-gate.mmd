@@ -1,0 +1,12 @@
+flowchart LR
+  subgraph apiimg["api image"]
+    direction LR
+    b1["<b>builder</b><br/>uv sync --frozen"] --> t1["<b>test</b> · gate<br/>ruff · mypy --strict<br/>pytest · coverage ≥ 95%"]
+    t1 -->|"quality-gate.txt"| r1["<b>runtime</b><br/>python slim · non-root"]
+    b1 -->|"venv"| r1
+  end
+  subgraph webimg["web image"]
+    direction LR
+    d2["<b>deps</b><br/>bun install --frozen"] --> t2["<b>test</b> · gate<br/>eslint (a11y, boundaries)<br/>tsc · vitest thresholds"]
+    t2 --> b2["<b>build</b><br/>vite"] --> r2["<b>runtime</b><br/>nginx-unprivileged :7777"]
+  end

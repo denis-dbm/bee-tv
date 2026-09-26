@@ -1,0 +1,36 @@
+sequenceDiagram
+  autonumber
+  actor U as Viewer
+  participant SPA as SPA · search feature
+  participant NG as nginx (web)
+  participant API as API · search slice
+  participant C as CachedCatalogProvider
+  participant T as TvMazeCatalogProvider
+  participant TV as TVMaze API
+  U->>SPA: types "dark"
+  Note over SPA: debounce 350 ms · URL becomes ?q=dark<br/>newer keystrokes abort older requests
+  alt already in browser cache (5 min)
+    SPA-->>U: tiles rendered instantly
+  else not cached
+    SPA->>NG: GET /api/v1/shows?q=dark
+    NG->>API: proxy · X-Request-ID
+    API->>API: validate q (1–100 chars)
+    API->>C: search_shows("dark")
+    alt server cache hit (TTL 5 min)
+      C-->>API: ShowSummary[]
+    else cache miss
+      C->>T: search_shows("dark")
+      T->>TV: GET /search/shows?q=dark
+      Note over T,TV: timeout 5 s · retry 429/5xx with backoff · circuit breaker
+      TV-->>T: [{score, show}]
+      T->>T: TvMazeMapper → id, title, year, poster
+      T-->>C: ShowSummary[]
+      C-->>API: ShowSummary[] (now cached)
+    end
+    API-->>SPA: 200 {items: [{id, title, year, posterUrl}]}
+    SPA-->>U: responsive tile grid
+  end
+  opt TVMaze down or circuit open
+    API-->>SPA: 503 problem+json · catalog_unavailable
+    SPA-->>U: "Our bees are taking a short nap" · Try again
+  end

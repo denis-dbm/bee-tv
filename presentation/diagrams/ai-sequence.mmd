@@ -1,0 +1,35 @@
+sequenceDiagram
+  autonumber
+  actor U as Viewer
+  participant D as BeeReviewDialog
+  participant API as API · bee_review
+  participant SRC as Catalog + comments
+  participant F as FallbackInsightGenerator
+  participant L as LLM adapter (cached)
+  participant HF as HuggingFace router
+  participant R as RuleBasedInsightGenerator
+  U->>D: "Bee Review" · toggle viewers' opinions
+  D->>API: GET /shows/{id}/review?includeComments=true
+  API->>SRC: summary + genres · up to 20 newest comments
+  API->>F: generate(InsightSubject)
+  F->>L: generate
+  alt AI insight cached (1 h)
+    L-->>F: Insight · source=ai
+  else circuit closed
+    L->>HF: POST /chat/completions · system + user prompt
+    alt 200 with text
+      HF-->>L: choices[0].message.content
+      L-->>F: Insight · source=ai (cached)
+    else error · 429 · timeout · empty output
+      L-->>F: InsightGenerationError
+      F->>R: generate (deterministic, offline)
+      R-->>F: Insight · source=fallback
+    end
+  else circuit open (3 failures → 30 s)
+    L-->>F: fail fast · no network call
+    F->>R: generate
+    R-->>F: Insight · source=fallback
+  end
+  F-->>API: Insight
+  API-->>D: 200 {text, source, generator, commentsConsidered}
+  D-->>U: review + "AI insight" or "Bee's instinct" chip

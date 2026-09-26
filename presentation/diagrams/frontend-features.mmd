@@ -1,0 +1,9 @@
+flowchart TB
+  app["<b>app/</b><br/>providers · router · layout"]
+  pages["<b>pages/</b> · composition roots<br/>SearchPage · ShowDetailsPage<br/><i>wire features through slots</i>"]
+  subgraph features["features/ · no cross imports (enforced by ESLint)"]
+    direction LR
+    s["search"] ~~~ sd["show-details"] ~~~ wt["watch-tracking"] ~~~ c["comments"] ~~~ br["bee-review"]
+  end
+  shared["<b>shared/</b><br/>api (HttpClient) · ui (ErrorState, EmptyState…)<br/>navigation · hooks · format"]
+  app --> pages --> features --> shared

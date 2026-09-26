@@ -1,0 +1,32 @@
+classDiagram
+  direction LR
+  class CatalogProvider {
+    <<interface>>
+    +search_shows(query) ShowSummary[]
+    +get_show(show_id) Show
+    +list_episodes(show_id) Episode[]
+    +get_episode(show_id, episode_id) Episode
+  }
+  class CachedCatalogProvider {
+    <<decorator>>
+    -inner CatalogProvider
+    -cache TTLCache 5 min
+  }
+  class TvMazeCatalogProvider {
+    <<adapter>>
+    -client httpx.AsyncClient
+    -breaker CircuitBreaker
+    -retry RetryPolicy
+  }
+  class TvMazeMapper {
+    +to_show(payload) Show
+    +to_episode(payload) Episode
+  }
+  class NextPartnerProvider {
+    <<future adapter>>
+  }
+  CatalogProvider <|.. CachedCatalogProvider
+  CatalogProvider <|.. TvMazeCatalogProvider
+  CatalogProvider <|.. NextPartnerProvider
+  CachedCatalogProvider o-- CatalogProvider : wraps
+  TvMazeCatalogProvider ..> TvMazeMapper : translates
