@@ -4,7 +4,9 @@ A smart streaming companion for your favorite TV series: search the catalog, exp
 track watched episodes, discuss them, and get an AI-powered **Bee Review**.
 
 ![Bee TV](./docs/media/bee-tv-home.png)
+
 ---
+
 ![Bee TV](./docs/media/bee-tv-series-detail.png)
 
 **There is a demo [here](./docs/media/bee-tv-intro.mov)!** (_.mov_ format)
@@ -235,6 +237,6 @@ TV series data is provided by [TVMaze](https://www.tvmaze.com) under
 
 ## AI-Assisted Engineering
 
-This current implementation was created with the support of the GitHub Copilot and Claude family models. The original files which have been written without AI assitance are under _docs_ folder (except the human-reviewed [_paterns and choices_](./docs/patterns-and-choices.md)). A specification-first approach was used to **understand the requirements**, **think about the solution** (_ideation_), and **establish principles and drivers**, especially the technical ones. They are _"macro-decisions"_ which support the derivation of well-adhered implementation decisions (i.e, _Repository Pattern_, _Interfaces for reasonable abstractions_, _unusual error-handling relying over intentioned fallback experiences_, etc).
+This current implementation was created with the support of the GitHub Copilot and Claude family models. The original files which have been written without AI assistance are under _docs_ folder (except the human-reviewed [_patterns and choices_](./docs/patterns-and-choices.md)). A specification-first approach was used to **understand the requirements**, **think about the solution** (_ideation_), and **establish principles and drivers**, especially the technical ones. They are _"macro-decisions"_ which support the derivation of well-adhered implementation decisions (i.e, _Repository Pattern_, _Interfaces for reasonable abstractions_, _unusual error-handling relying over intentioned fallback experiences_, etc).
 
 A strong reason to use AI-Engineering has been **greater quality**, **the real-world scenario** that demands heavy AI usage by IT professionals, and the **level of my experience** not only in software and clear-conscious decisions but with AI-Assisted engineering.
